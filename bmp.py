@@ -1,0 +1,57 @@
+import argparse
+from sys import argv
+from PyQt5.QtWidgets import QApplication
+from gui import *
+from main import *
+
+
+def specify_filename():
+    name = input("Specify file name: ")
+    while name == '':
+        name = input("Specify file name: ")
+    return name
+
+
+def main():
+    try:
+        args = parse_args()
+        if args.gui:
+            run_gui(args.file)
+        else:
+            if args.file is None:
+                filename = specify_filename()
+            else:
+                filename = args.file
+            run_console_mode(filename)
+    except Exception as e:
+        print("Error: " + str(e))
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gui", action="store_true", help="enable gui")
+    parser.add_argument("-f", "--file", help="file to extract")
+    return parser.parse_args()
+
+
+def run_gui(filename):
+    app = QApplication(argv)
+    widget = MainWidget(filename)
+    widget.show()
+    app.exec_()
+
+
+def run_console_mode(filename):
+    file = open_file(filename)
+    check_if_file_is_bmp(file, filename)
+    info = get_file_info(file, filename)
+    print_info(info)
+
+
+def print_info(info):
+    for prop in info:
+        print(prop)
+
+
+if __name__ == '__main__':
+    main()
