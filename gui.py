@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMessageBox
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
 from main import *
+from rendering import *
 import sys
 
 
@@ -46,15 +47,16 @@ class MainWidget(QtWidgets.QMainWindow):
                 self.file_name = self.file_name
                 self.file_data = open_file(self.file_name)
                 self.file_info = read_file_header(self.file_data, self.file_name)
+                self.bitmap_info = get_bitmap_info(self.file_data,self.file_info)
                 self.file_info.name = self.file_name
                 check_if_file_is_bmp(self.file_data, self.file_name)
         except Exception as e:
             self.show_error(e)
         else:
             self.dockwidget.widget().show_file_info(self.file_info)
-            label = QtWidgets.QLabel(self)
-            label.setPixmap(QPixmap(self.file_name))
-            self.setCentralWidget(label)
+            # label = QtWidgets.QLabel(self)
+            # label.setPixmap(QPixmap(self.file_name))
+            self.setCentralWidget(BmpRenderer(self.file_data,self.file_info,self.bitmap_info))
             self.dockwidget.show()
             self.showMaximized()
 
