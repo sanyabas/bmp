@@ -45,7 +45,7 @@ class MainWidget(QtWidgets.QMainWindow):
             with open(self.file_name, 'rb') as file:
                 self.file_name = self.file_name
                 self.file_data = open_file(self.file_name)
-                self.file_info = get_file_info(self.file_data, self.file_name)
+                self.file_info = read_file_header(self.file_data, self.file_name)
                 self.file_info.name = self.file_name
                 check_if_file_is_bmp(self.file_data, self.file_name)
         except Exception as e:
