@@ -46,6 +46,9 @@ class FileHeader:
         yield "Offset: {} bytes".format(self.offset)
         yield "Version: {}".format(self.version)
 
+    def __eq__(self, other):
+        return self.name == other.name and self.size == other.size and self.offset == other.offset and self.version == other.version
+
 
 class BitmapInfoCore:
     def __init__(self):
@@ -96,6 +99,10 @@ class BitmapInfoCore:
         yield 'Height: {} bytes'.format(self.height)
         yield 'Planes count: {}'.format(self.planes_count)
         yield 'Bits per pixel: {}'.format(self.bit_count)
+
+    def __eq__(self, other):
+        return self.version == other.version \
+               and self.width == other.width and self.height == other.height and self.bit_count == other.bit_count
 
 
 class BitmapInfoVersion3(BitmapInfoCore):
@@ -159,6 +166,11 @@ class BitmapInfoVersion3(BitmapInfoCore):
         yield 'Pixels per meter by Y: {}'.format(self.y_pixels_per_meter)
         yield 'Size of color table: {} bytes'.format(self.color_table_size)
         yield 'Important colors: {}'.format(self.important_colors)
+
+    def __eq__(self, other):
+        return super.__eq__(self, other) and self.compression == other.compression and self.image_size == other.image_size \
+               and self.x_pixels_per_meter == other.x_pixels_per_meter and self.y_pixels_per_meter == other.y_pixels_per_meter \
+               and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
 
 
 class BitmapInfoVersion4(BitmapInfoVersion3):
@@ -237,6 +249,10 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
         yield 'Blue mask: {0:b}'.format(self.blue_mask)
         yield 'Alpha mask: {}'.format(self.alpha_mask)
         yield 'Color space type: {}'.format(self.cs_type)
+
+    def __eq__(self, other):
+        return super.__eq__(self,other) and self.red_mask == other.red_mask and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
+               and self.alpha_mask == other.alpha_mask and self.cs_type == other.cs_type
 
 
 def open_file(filename):

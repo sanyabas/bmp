@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMessageBox
+from PyQt5.QtCore import QPoint
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
 from main import *
+from rendering import *
 import sys
 
 
@@ -13,7 +15,7 @@ class MainWidget(QtWidgets.QMainWindow):
         self.dockwidget.hide()
         self.init_ui()
         if self.file_name is not None and self.file_name != '':
-            self.openFile()
+            self.openFile(self.file_name)
 
     def init_ui(self):
         open_action = QtWidgets.QAction("&Open", self)
@@ -35,8 +37,8 @@ class MainWidget(QtWidgets.QMainWindow):
         self.setWindowTitle('BMP file opener')
         self.show()
 
-    def openFile(self):
-        if self.file_name == '' or self.file_name is None:
+    def openFile(self, name=None):
+        if name == '' or name is None or name is False:
             filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file')[0]
             if filename == '':
                 return
@@ -46,17 +48,29 @@ class MainWidget(QtWidgets.QMainWindow):
                 self.file_name = self.file_name
                 self.file_data = open_file(self.file_name)
                 self.file_info = read_file_header(self.file_data, self.file_name)
+                self.bitmap_info = get_bitmap_info(self.file_data,self.file_info)
                 self.file_info.name = self.file_name
                 check_if_file_is_bmp(self.file_data, self.file_name)
         except Exception as e:
             self.show_error(e)
         else:
             self.dockwidget.widget().show_file_info(self.file_info)
-            label = QtWidgets.QLabel(self)
-            label.setPixmap(QPixmap(self.file_name))
-            self.setCentralWidget(label)
+            # label = QtWidgets.QLabel(self)
+            # label.setPixmap(QPixmap(self.file_name))
+            renderer = BmpRenderer(self.file_data,self.file_info,self.bitmap_info)
+            renderer.setGeometry(200, 200, max(0, 200), max(0,200))
+            # renderer.exec_()
+            self.setCentralWidget(renderer)
+            self.centralWidget().setGeometry(200,200,200,200)
+            # self.centralWidget().qp.setViewport(200, 200, max(0, 200), max(0, 200))
+            self.move(200,200)
+            self.centralWidget().render(self, QPoint(100,100))
             self.dockwidget.show()
             self.showMaximized()
+
+    # def moveEvent(self,e):
+        # if self.centralWidget() is not None:
+        #     self.centralWidget().paintEvent(e)
 
     def show_error(self, error):
         messagebox = QMessageBox()
