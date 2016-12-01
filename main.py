@@ -41,7 +41,7 @@ class FileHeader:
         self._version = value
 
     def __iter__(self):
-        yield "Name: {}".format(self.name)
+        yield "Name:{}".format(self.name)
         yield "Size: {} bytes".format(self.size)
         yield "Offset: {} bytes".format(self.offset)
         yield "Version: {}".format(self.version)

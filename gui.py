@@ -47,30 +47,22 @@ class MainWidget(QtWidgets.QMainWindow):
             with open(self.file_name, 'rb') as file:
                 self.file_name = self.file_name
                 self.file_data = open_file(self.file_name)
+                check_if_file_is_bmp(self.file_data, self.file_name)
                 self.file_info = read_file_header(self.file_data, self.file_name)
                 self.bitmap_info = get_bitmap_info(self.file_data,self.file_info)
                 self.file_info.name = self.file_name
-                check_if_file_is_bmp(self.file_data, self.file_name)
         except Exception as e:
             self.show_error(e)
         else:
-            self.dockwidget.widget().show_file_info(self.file_info)
-            # label = QtWidgets.QLabel(self)
-            # label.setPixmap(QPixmap(self.file_name))
+            self.dockwidget.widget().show_file_info(self.file_info, self.bitmap_info)
             renderer = BmpRenderer(self.file_data,self.file_info,self.bitmap_info)
             renderer.setGeometry(200, 200, max(0, 200), max(0,200))
-            # renderer.exec_()
             self.setCentralWidget(renderer)
             self.centralWidget().setGeometry(200,200,200,200)
-            # self.centralWidget().qp.setViewport(200, 200, max(0, 200), max(0, 200))
             self.move(200,200)
             self.centralWidget().render(self, QPoint(100,100))
             self.dockwidget.show()
             self.showMaximized()
-
-    # def moveEvent(self,e):
-        # if self.centralWidget() is not None:
-        #     self.centralWidget().paintEvent(e)
 
     def show_error(self, error):
         messagebox = QMessageBox()
@@ -89,6 +81,7 @@ class InfoWidget(QWidget):
         self.size_label = QLabel()
         self.offset_label = QLabel()
         self.version_label = QLabel()
+        self.bitmap_label = QLabel()
         self.init_ui()
 
     def init_ui(self):
@@ -96,6 +89,7 @@ class InfoWidget(QWidget):
         size = QLabel('Size: ')
         offset = QLabel('Offset: ')
         version = QLabel('Version: ')
+        # bitmap=QLabel()
         titles = [name, size, offset, version]
         for i in range(len(titles)):
             self.layout.addWidget(titles[i], i, 0)
@@ -103,12 +97,15 @@ class InfoWidget(QWidget):
         for i in range(len(values)):
             self.layout.addWidget(values[i], i, 1)
             self.layout.setRowStretch(i, 0)
-        self.layout.addWidget(QWidget(), len(values), 0, -1, -1)
+        self.layout.addWidget(self.bitmap_label,len(values),0,len(values),-1)
+        self.layout.addWidget(QWidget(), len(values)+1, 0, -1, -1)
         self.layout.setRowStretch(len(values), 1)
         self.setLayout(self.layout)
 
-    def show_file_info(self, info):
+    def show_file_info(self, info, bitmap):
         self.name_label.setText(info.name)
         self.offset_label.setText('{} bytes'.format(info.offset))
         self.size_label.setText('{} bytes'.format(info.size))
         self.version_label.setText(str(info.version))
+        self.bitmap_label.setText('\n\n'.join(bitmap))
+        #в iter возвращать tuple с заголовком и значением, в доке создавать виджеты под каждое поле и выводить :)
