@@ -15,7 +15,7 @@ class MainWidget(QtWidgets.QMainWindow):
         self.dockwidget.hide()
         self.init_ui()
         if self.file_name is not None and self.file_name != '':
-            self.openFile()
+            self.openFile(self.file_name)
 
     def init_ui(self):
         open_action = QtWidgets.QAction("&Open", self)
@@ -37,8 +37,8 @@ class MainWidget(QtWidgets.QMainWindow):
         self.setWindowTitle('BMP file opener')
         self.show()
 
-    def openFile(self):
-        if self.file_name == '' or self.file_name is None:
+    def openFile(self, name=None):
+        if name == '' or name is None or name is False:
             filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file')[0]
             if filename == '':
                 return
