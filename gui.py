@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMessageBox
+from PyQt5.QtCore import QPoint
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtGui import QPixmap
 from main import *
@@ -56,9 +57,20 @@ class MainWidget(QtWidgets.QMainWindow):
             self.dockwidget.widget().show_file_info(self.file_info)
             # label = QtWidgets.QLabel(self)
             # label.setPixmap(QPixmap(self.file_name))
-            self.setCentralWidget(BmpRenderer(self.file_data,self.file_info,self.bitmap_info))
+            renderer = BmpRenderer(self.file_data,self.file_info,self.bitmap_info)
+            renderer.setGeometry(200, 200, max(0, 200), max(0,200))
+            # renderer.exec_()
+            self.setCentralWidget(renderer)
+            self.centralWidget().setGeometry(200,200,200,200)
+            # self.centralWidget().qp.setViewport(200, 200, max(0, 200), max(0, 200))
+            self.move(200,200)
+            self.centralWidget().render(self, QPoint(100,100))
             self.dockwidget.show()
             self.showMaximized()
+
+    # def moveEvent(self,e):
+        # if self.centralWidget() is not None:
+        #     self.centralWidget().paintEvent(e)
 
     def show_error(self, error):
         messagebox = QMessageBox()

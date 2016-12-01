@@ -1,6 +1,10 @@
 import unittest
-import main as parser
 
+import sys
+
+import main as parser
+import rendering
+from PyQt5.QtWidgets import QApplication
 
 class TestFileParsing(unittest.TestCase):
     def setUp(self):
@@ -18,7 +22,7 @@ class TestFileParsing(unittest.TestCase):
     def test_header_parsing(self):
         expected = parser.FileHeader(self.file_name, 768122, 122, 4)
         result = parser.read_file_header(parser.open_file(self.file_name), self.file_name)
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
 
     def test_core_info_parsing(self):
         expected = parser.BitmapInfoCore()
@@ -65,6 +69,17 @@ class TestFileParsing(unittest.TestCase):
         expected.cs_type = 0
         result = parser.fill_v4_info(self.file)
         self.assertEqual(expected, result)
+
+
+class TestPixelsExtractor(unittest.TestCase):
+    def test_pixels(self):
+        file=parser.open_file('qwe.bmp')
+        header = parser.read_file_header(file,'qwe.bmp')
+        info = parser.get_bitmap_info(file, header)
+        app = QApplication(sys.argv)
+        renderer = rendering.BmpRenderer(file,header,info)
+        for pixel in renderer.get_next_pixel(file):
+            print(pixel)
 
 
 if __name__ == '__main__':

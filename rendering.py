@@ -14,14 +14,21 @@ class BmpRenderer(QWidget):
         self.row_offset = 0
         self.x = 0
         self.y = bitmap_info.height - 1
-        # self.setGeometry(0, 0, max(bitmap_info.width, 200), max(bitmap_info.height,200))
+        self.setGeometry(200, 200, max(0, 200), max(0   ,200))
+        self.qp=QPainter()
         self.show()
 
     def paintEvent(self, e):
-        qp = QPainter()
-        qp.begin(self)
-        self.render_24bit(qp, self.file, self.header, self.bitmap_info)
-        qp.end()
+        # qp = QPainter()
+        # self.__init__(self.file,self.header,self.bitmap_info)
+        self.pixel_offset = self.header.offset
+        self.row_offset = 0
+        self.x = 0
+        self.y = self.bitmap_info.height - 1
+        self.qp.begin(self)
+        self.render_24bit(self.qp, self.file, self.header, self.bitmap_info)
+        self.qp.end()
+
 
     def render_24bit(self, qp: QPainter, file: bytes, header: FileHeader, bitmap: BitmapInfoVersion3):
         for pixel in self.get_next_pixel(file):
