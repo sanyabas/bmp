@@ -41,10 +41,10 @@ class FileHeader:
         self._version = value
 
     def __iter__(self):
-        yield "Name:{}".format(self.name)
-        yield "Size: {} bytes".format(self.size)
-        yield "Offset: {} bytes".format(self.offset)
-        yield "Version: {}".format(self.version)
+        yield "Name: ", self.name
+        yield "Size: ", "{} bytes".format(self.size)
+        yield "Offset: ", "{} bytes".format(self.offset)
+        yield "Version: ", self.version
 
     def __eq__(self, other):
         return self.name == other.name and self.size == other.size and self.offset == other.offset and self.version == other.version
@@ -95,10 +95,10 @@ class BitmapInfoCore:
         self._bit_count = value
 
     def __iter__(self):
-        yield 'Width: {} bytes'.format(self.width)
-        yield 'Height: {} bytes'.format(self.height)
-        yield 'Planes count: {}'.format(self.planes_count)
-        yield 'Bits per pixel: {}'.format(self.bit_count)
+        yield 'Width: ', '{} bytes'.format(self.width)
+        yield 'Height: ', '{} bytes'.format(self.height)
+        yield 'Planes count: ', self.planes_count
+        yield 'Bits per pixel: ', self.bit_count
 
     def __eq__(self, other):
         return self.version == other.version \
@@ -160,15 +160,16 @@ class BitmapInfoVersion3(BitmapInfoCore):
     def __iter__(self):
         for property in super().__iter__():
             yield property
-        yield 'Compression type: {}'.format(self.compression)
-        yield 'Image data size: {} bytes'.format(self.image_size)
-        yield 'Pixels per meter by X: {}'.format(self.x_pixels_per_meter)
-        yield 'Pixels per meter by Y: {}'.format(self.y_pixels_per_meter)
-        yield 'Size of color table: {} bytes'.format(self.color_table_size)
-        yield 'Important colors: {}'.format(self.important_colors)
+        yield 'Compression type: ', self.compression
+        yield 'Image data size: ', '{} bytes'.format(self.image_size)
+        yield 'Pixels per meter by X: ', self.x_pixels_per_meter
+        yield 'Pixels per meter by Y: ', self.y_pixels_per_meter
+        yield 'Size of color table: ', '{} bytes'.format(self.color_table_size)
+        yield 'Important colors: ', self.important_colors
 
     def __eq__(self, other):
-        return super.__eq__(self, other) and self.compression == other.compression and self.image_size == other.image_size \
+        return super.__eq__(self,
+                            other) and self.compression == other.compression and self.image_size == other.image_size \
                and self.x_pixels_per_meter == other.x_pixels_per_meter and self.y_pixels_per_meter == other.y_pixels_per_meter \
                and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
 
@@ -183,7 +184,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @red_mask.setter
     def red_mask(self, value):
-        self._red_mask = value
+        self._red_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
 
     @property
     def green_mask(self):
@@ -191,7 +192,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @green_mask.setter
     def green_mask(self, value):
-        self._green_mask = value
+        self._green_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
 
     @property
     def blue_mask(self):
@@ -199,7 +200,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @blue_mask.setter
     def blue_mask(self, value):
-        self._blue_mask = value
+        self._blue_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
 
     @property
     def alpha_mask(self):
@@ -207,7 +208,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @alpha_mask.setter
     def alpha_mask(self, value):
-        self._alpha_mask = value
+        self._alpha_mask = value if self.bit_count != 24 else 'Not used'
 
     @property
     def cs_type(self):
@@ -244,14 +245,15 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
     def __iter__(self):
         for property in super().__iter__():
             yield property
-        yield 'Red mask: {0:b}'.format(self.red_mask)
-        yield 'Green mask: {0:b}'.format(self.green_mask)
-        yield 'Blue mask: {0:b}'.format(self.blue_mask)
-        yield 'Alpha mask: {}'.format(self.alpha_mask)
-        yield 'Color space type: {}'.format(self.cs_type)
+        yield 'Red mask: ', self.red_mask
+        yield 'Green mask: ', self.green_mask
+        yield 'Blue mask: ', self.blue_mask
+        yield 'Alpha mask: ', self.alpha_mask
+        yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
-        return super.__eq__(self,other) and self.red_mask == other.red_mask and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
+        return super.__eq__(self,
+                            other) and self.red_mask == other.red_mask and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
                and self.alpha_mask == other.alpha_mask and self.cs_type == other.cs_type
 
 
@@ -315,13 +317,6 @@ def fill_v4_info(file):
     info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
     info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
     return info
-
-
-def get_hex_int(input_list):
-    number = 0
-    for i in input_list[::-1]:
-        number = number * 256 + int(i, 16)
-    return number
 
 
 VERSIONS = {

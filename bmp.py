@@ -52,7 +52,7 @@ def run_console_mode(filename):
 
 def print_info(info):
     for prop in info:
-        print(prop)
+        print(*prop)
 
 
 if __name__ == '__main__':
