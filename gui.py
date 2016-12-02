@@ -54,6 +54,7 @@ class MainWidget(QtWidgets.QMainWindow):
         except Exception as e:
             self.show_error(e)
         else:
+            self.dock_widget.setWidget(InfoWidget())
             self.dock_widget.widget().show_file_info(self.file_info, self.bitmap_info)
             renderer = BmpRenderer(self.file_data, self.file_info, self.bitmap_info)
             self.setCentralWidget(renderer)

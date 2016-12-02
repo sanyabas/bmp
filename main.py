@@ -158,8 +158,8 @@ class BitmapInfoVersion3(BitmapInfoCore):
         self._important = value
 
     def __iter__(self):
-        for property in super().__iter__():
-            yield property
+        for prop in super().__iter__():
+            yield prop
         yield 'Compression type: ', self.compression
         yield 'Image data size: ', '{} bytes'.format(self.image_size)
         yield 'Pixels per meter by X: ', self.x_pixels_per_meter
@@ -184,7 +184,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @red_mask.setter
     def red_mask(self, value):
-        self._red_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
+        self._red_mask = value if self.bit_count != 24 else 'Not used'
 
     @property
     def green_mask(self):
@@ -192,7 +192,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @green_mask.setter
     def green_mask(self, value):
-        self._green_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
+        self._green_mask = value if self.bit_count != 24 else 'Not used'
 
     @property
     def blue_mask(self):
@@ -200,7 +200,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @blue_mask.setter
     def blue_mask(self, value):
-        self._blue_mask = '{0:b}'.format(value) if self.bit_count != 24 else 'Not used'
+        self._blue_mask = value if self.bit_count != 24 else 'Not used'
 
     @property
     def alpha_mask(self):
@@ -245,16 +245,56 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
     def __iter__(self):
         for property in super().__iter__():
             yield property
-        yield 'Red mask: ', self.red_mask
-        yield 'Green mask: ', self.green_mask
-        yield 'Blue mask: ', self.blue_mask
-        yield 'Alpha mask: ', self.alpha_mask
+        if self.bit_count==16 or self.bit_count==32:
+            yield 'Red mask: ', '{:032b}'.format(self.red_mask)
+            yield 'Green mask: ', '{:032b}'.format(self.green_mask)
+            yield 'Blue mask: ', '{:032b}'.format(self.blue_mask)
+            yield 'Alpha mask: ', '{:032b}'.format(self.alpha_mask)
         yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
-        return super.__eq__(self,
-                            other) and self.red_mask == other.red_mask and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
+        return super.__eq__(self, other) and self.red_mask == other.red_mask \
+               and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
                and self.alpha_mask == other.alpha_mask and self.cs_type == other.cs_type
+
+
+class BitmapInfoVersion5(BitmapInfoVersion4):
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def intent(self):
+        return self._intent
+
+    @intent.setter
+    def intent(self, value):
+        self._intent=value
+
+    @property
+    def profile_data(self):
+        return self._profile_data
+
+    @profile_data.setter
+    def profile_data(self, value):
+        self._profile_data=value
+
+    @property
+    def profile_size(self):
+        return self._profile_size
+
+    @profile_size.setter
+    def profile_size(self, value):
+        self._profile_size=value
+
+    def __iter__(self):
+        for prop in super().__iter__():
+            yield prop
+        yield 'Intent: ', self.intent
+        yield 'Profile data: ',self.profile_data
+        yield 'Profile size: ',self.profile_size
+
+    def __eq__(self, other):
+        return super.__eq__(self,other) and self.intent==other.intent and self.profile_data==other.profile_data and self.profile_size == other.profile_size
 
 
 def open_file(filename):
@@ -306,16 +346,27 @@ def fill_v3_info(file, info=None):
     return info
 
 
-def fill_v4_info(file):
-    info = BitmapInfoVersion4()
+def fill_v4_info(file, info=None):
+    if info is None:
+        info = BitmapInfoVersion4()
+        info.version = 4
     info = fill_v3_info(file, info)
-    info.version = 4
     info.red_mask = unpack('<I', file[0x36:0x36 + 4])[0]
     info.green_mask = unpack('<I', file[0x3a:0x3a + 4])[0]
     info.blue_mask = unpack('<I', file[0x3e:0x3e + 4])[0]
     info.alpha_mask = unpack('<I', file[0x42:0x42 + 4])[0]
     info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
     info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
+    return info
+
+
+def fill_v5_info(file):
+    info = BitmapInfoVersion5()
+    info = fill_v4_info(file, info)
+    info.version=5
+    info.intent=unpack('<I', file[0x7a:0x7a+4])[0]
+    info.profile_data=unpack('<I', file[0x7e:0x7e+4])[0]
+    info.profile_size=unpack('<I', file[0x82:0x82+4])[0]
     return info
 
 
@@ -329,5 +380,6 @@ VERSIONS = {
 VERSION_FUNCTIONS = {
     'CORE': fill_core_info,
     3: fill_v3_info,
-    4: fill_v4_info
+    4: fill_v4_info,
+    5: fill_v5_info
 }
