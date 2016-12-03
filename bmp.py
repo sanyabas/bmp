@@ -2,7 +2,7 @@ import argparse
 from sys import argv
 from PyQt5.QtWidgets import QApplication
 from gui import *
-from main import *
+from bmp_core import *
 
 
 def specify_filename():
@@ -44,13 +44,16 @@ def run_gui(filename):
 def run_console_mode(filename):
     file = open_file(filename)
     check_if_file_is_bmp(file, filename)
-    info = get_file_info(file, filename)
-    print_info(info)
+    header = read_file_header(file, filename)
+    bitmap_info=get_bitmap_info(file, header)
+    print_info(header)
+    print_info(bitmap_info)
+    extract_palette(file, bitmap_info)
 
 
 def print_info(info):
     for prop in info:
-        print(prop)
+        print(*prop)
 
 
 if __name__ == '__main__':
