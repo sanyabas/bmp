@@ -168,9 +168,9 @@ class BitmapInfoVersion3(BitmapInfoCore):
         yield 'Important colors: ', self.important_colors
 
     def __eq__(self, other):
-        return super.__eq__(self,
-                            other) and self.compression == other.compression and self.image_size == other.image_size \
-               and self.x_pixels_per_meter == other.x_pixels_per_meter and self.y_pixels_per_meter == other.y_pixels_per_meter \
+        return super.__eq__(self, other) and self.compression == other.compression \
+               and self.image_size == other.image_size and self.x_pixels_per_meter == other.x_pixels_per_meter \
+               and self.y_pixels_per_meter == other.y_pixels_per_meter \
                and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
 
 
@@ -184,7 +184,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @red_mask.setter
     def red_mask(self, value):
-        self._red_mask = value if self.bit_count != 24 else 'Not used'
+        self._red_mask = value
 
     @property
     def green_mask(self):
@@ -192,7 +192,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @green_mask.setter
     def green_mask(self, value):
-        self._green_mask = value if self.bit_count != 24 else 'Not used'
+        self._green_mask = value
 
     @property
     def blue_mask(self):
@@ -200,7 +200,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @blue_mask.setter
     def blue_mask(self, value):
-        self._blue_mask = value if self.bit_count != 24 else 'Not used'
+        self._blue_mask = value
 
     @property
     def alpha_mask(self):
@@ -208,7 +208,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
 
     @alpha_mask.setter
     def alpha_mask(self, value):
-        self._alpha_mask = value if self.bit_count != 24 else 'Not used'
+        self._alpha_mask = value
 
     @property
     def cs_type(self):
@@ -245,11 +245,12 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
     def __iter__(self):
         for property in super().__iter__():
             yield property
-        if self.bit_count==16 or self.bit_count==32:
-            yield 'Red mask: ', '{:032b}'.format(self.red_mask)
-            yield 'Green mask: ', '{:032b}'.format(self.green_mask)
-            yield 'Blue mask: ', '{:032b}'.format(self.blue_mask)
-            yield 'Alpha mask: ', '{:032b}'.format(self.alpha_mask)
+        if self.bit_count == 16 or self.bit_count == 32:
+            print_format = r'{:032b}' if self.bit_count == 32 else r'{:016b}'
+            yield 'Red mask: ', print_format.format(self.red_mask)
+            yield 'Green mask: ', print_format.format(self.green_mask)
+            yield 'Blue mask: ', print_format.format(self.blue_mask)
+            yield 'Alpha mask: ', print_format.format(self.alpha_mask)
         yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
@@ -268,7 +269,7 @@ class BitmapInfoVersion5(BitmapInfoVersion4):
 
     @intent.setter
     def intent(self, value):
-        self._intent=value
+        self._intent = value
 
     @property
     def profile_data(self):
@@ -276,7 +277,7 @@ class BitmapInfoVersion5(BitmapInfoVersion4):
 
     @profile_data.setter
     def profile_data(self, value):
-        self._profile_data=value
+        self._profile_data = value
 
     @property
     def profile_size(self):
@@ -284,17 +285,18 @@ class BitmapInfoVersion5(BitmapInfoVersion4):
 
     @profile_size.setter
     def profile_size(self, value):
-        self._profile_size=value
+        self._profile_size = value
 
     def __iter__(self):
         for prop in super().__iter__():
             yield prop
         yield 'Intent: ', self.intent
-        yield 'Profile data: ',self.profile_data
-        yield 'Profile size: ',self.profile_size
+        yield 'Profile data: ', self.profile_data
+        yield 'Profile size: ', self.profile_size
 
     def __eq__(self, other):
-        return super.__eq__(self,other) and self.intent==other.intent and self.profile_data==other.profile_data and self.profile_size == other.profile_size
+        return super.__eq__(self, other) and self.intent == other.intent \
+               and self.profile_data == other.profile_data and self.profile_size == other.profile_size
 
 
 def open_file(filename):
@@ -363,10 +365,10 @@ def fill_v4_info(file, info=None):
 def fill_v5_info(file):
     info = BitmapInfoVersion5()
     info = fill_v4_info(file, info)
-    info.version=5
-    info.intent=unpack('<I', file[0x7a:0x7a+4])[0]
-    info.profile_data=unpack('<I', file[0x7e:0x7e+4])[0]
-    info.profile_size=unpack('<I', file[0x82:0x82+4])[0]
+    info.version = 5
+    info.intent = unpack('<I', file[0x7a:0x7a + 4])[0]
+    info.profile_data = unpack('<I', file[0x7e:0x7e + 4])[0]
+    info.profile_size = unpack('<I', file[0x82:0x82 + 4])[0]
     return info
 
 
