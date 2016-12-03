@@ -1,10 +1,7 @@
 import unittest
 
-import sys
+import bmp_core as parser
 
-import main as parser
-import rendering
-from PyQt5.QtWidgets import QApplication
 
 class TestFileParsing(unittest.TestCase):
     def setUp(self):
@@ -24,15 +21,6 @@ class TestFileParsing(unittest.TestCase):
         result = parser.read_file_header(parser.open_file(self.file_name), self.file_name)
         self.assertEqual(result, expected)
 
-    def test_core_info_parsing(self):
-        expected = parser.BitmapInfoCore()
-        expected.bit_count = 24
-        expected.height = 400
-        expected.width = 640
-        result = parser.fill_core_info(self.file)
-        self.assertTrue(
-            result.bit_count == expected.bit_count and result.height == expected.height and result.width == expected.width)
-
     def test_v3_info_parser(self):
         expected = parser.BitmapInfoVersion3()
         expected.version = 3
@@ -51,7 +39,7 @@ class TestFileParsing(unittest.TestCase):
 
     def test_v4_info_parser(self):
         expected = parser.BitmapInfoVersion4
-        expected.version = 3
+        expected.version = 4
         expected.bit_count = 24
         expected.height = 400
         expected.width = 640
@@ -70,16 +58,49 @@ class TestFileParsing(unittest.TestCase):
         result = parser.fill_v4_info(self.file)
         self.assertEqual(expected, result)
 
+    def test_v5_parser(self):
+        expected = parser.BitmapInfoVersion5()
+        expected.version = 5
+        expected.bit_count = 32
+        expected.height = 3
+        expected.width = 4
+        expected.planes_count = 1
+        expected.bit_count = 32
+        expected.compression = 3
+        expected.image_size = 48
+        expected.x_pixels_per_meter = 2835
+        expected.y_pixels_per_meter = 2835
+        expected.color_table_size = 0
+        expected.important_colors = 0
+        expected.red_mask = 4278190080
+        expected.green_mask = 16711680
+        expected.blue_mask = 65280
+        expected.alpha_mask = 255
+        expected.cs_type = 'BGRs'
+        expected.intent = 2
+        expected.profile_data = 0
+        expected.profile_size = 0
 
-class TestPixelsExtractor(unittest.TestCase):
-    def test_pixels(self):
-        file=parser.open_file('qwe.bmp')
-        header = parser.read_file_header(file,'qwe.bmp')
-        info = parser.get_bitmap_info(file, header)
-        app = QApplication(sys.argv)
-        renderer = rendering.BmpRenderer(file,header,info)
-        for pixel in renderer.get_next_pixel(file):
-            print(pixel)
+        file_name = '32-3.bmp'
+        file = parser.open_file(file_name)
+        result = parser.fill_v5_info(file)
+        self.assertEqual(expected, result)
+
+
+class PaletteTester(unittest.TestCase):
+    def setUp(self):
+        self.file_name = 'aa.bmp'
+        self.file = parser.open_file(self.file_name)
+        self.header = parser.read_file_header(self.file, self.file_name)
+        self.info = parser.get_bitmap_info(self.file, self.header)
+        self.palette = parser.extract_palette(self.file, self.info)
+
+    def test_palette_extracting(self):
+        self.assertEqual(256, len(self.palette))
+
+    def test_palette_splitting(self):
+        palette = parser.group_palette_by(self.palette, 8)
+        self.assertEqual(32, len(palette))
 
 
 if __name__ == '__main__':

@@ -1,17 +1,24 @@
-from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtGui import QPainter, QColor, QPen
-from main import *
+from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtWidgets import QWidget
+
+from bmp_core import *
 
 
 class BmpRenderer(QWidget):
-    def __init__(self, file, header, bitmap_info, parent=None):
+    def __init__(self, file, header, bitmap_info, color_table, parent=None):
         QWidget.__init__(self, parent)
         self.min_size = 200
         self.bitmap_info = bitmap_info
         self.file = file
         self.header = header
         self.byte_count = bitmap_info.bit_count / 8
+        self.color_table = color_table
+        self.color_functions = {
+            8: self.get_8_bit_color,
+            16: self.get_16_bit_color,
+            24: self.get_24_bit_color,
+            32: self.get_32_bit_color
+        }
 
     def paintEvent(self, e):
         qp = QPainter()
@@ -63,12 +70,7 @@ class BmpRenderer(QWidget):
                 local_pixel_offset = 0
 
     def get_pixel_color(self, file, offset):
-        if self.bitmap_info.bit_count == 16:
-            return self.get_16_bit_color(file, offset)
-        elif self.bitmap_info.bit_count == 24:
-            return self.get_24_bit_color(file, offset)
-        else:
-            return self.get_32_bit_color(file, offset)
+        return self.color_functions.get(self.bitmap_info.bit_count)(file, offset)
 
     def get_24_bit_color(self, file, offset):
         blue = unpack('B', file[offset:offset + 1])[0]
@@ -85,6 +87,11 @@ class BmpRenderer(QWidget):
         color = unpack('<H', file[offset:offset + 2])[0]
         rgb_color = self.transform_color_to_rgb(color)
         return rgb_color, offset + 2
+
+    def get_8_bit_color(self, file, offset):
+        color = unpack('B', file[offset:offset + 1])[0]
+        rgb_color = self.color_table[color]
+        return rgb_color, offset + 1
 
     def transform_color_to_rgb(self, color):
         red_bin = '{:b}'.format(self.bitmap_info.red_mask & color)

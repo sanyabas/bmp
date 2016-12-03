@@ -1,3 +1,4 @@
+import re
 from struct import unpack
 
 
@@ -41,7 +42,9 @@ class FileHeader:
         self._version = value
 
     def __iter__(self):
-        yield "Name: ", self.name
+        reg = re.compile(r'(/?.*?)[\\/].*([\\/].+?)$')
+        result = re.findall(reg, self.name)
+        yield "Name: ", self.name if len(self.name) < 20 else '{}...{}'.format(result[0][0], result[0][1])
         yield "Size: ", "{} bytes".format(self.size)
         yield "Offset: ", "{} bytes".format(self.offset)
         yield "Version: ", self.version
@@ -108,6 +111,7 @@ class BitmapInfoCore:
 class BitmapInfoVersion3(BitmapInfoCore):
     def __init__(self):
         super().__init__()
+        self.color_table_offset = 0x36
 
     @property
     def compression(self):
@@ -147,7 +151,7 @@ class BitmapInfoVersion3(BitmapInfoCore):
 
     @color_table_size.setter
     def color_table_size(self, value):
-        self._color_table_size = value
+        self._color_table_size = value if value != 0 or self.bit_count > 8 else 2 ** self.bit_count
 
     @property
     def important_colors(self):
@@ -162,9 +166,9 @@ class BitmapInfoVersion3(BitmapInfoCore):
             yield prop
         yield 'Compression type: ', self.compression
         yield 'Image data size: ', '{} bytes'.format(self.image_size)
-        yield 'Pixels per meter by X: ', self.x_pixels_per_meter
-        yield 'Pixels per meter by Y: ', self.y_pixels_per_meter
-        yield 'Size of color table: ', '{} bytes'.format(self.color_table_size)
+        yield 'PPM by X: ', self.x_pixels_per_meter
+        yield 'PPM by Y: ', self.y_pixels_per_meter
+        yield 'Size of color table: ', self.color_table_size
         yield 'Important colors: ', self.important_colors
 
     def __eq__(self, other):
@@ -246,11 +250,10 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
         for property in super().__iter__():
             yield property
         if self.bit_count == 16 or self.bit_count == 32:
-            print_format = r'{:032b}' if self.bit_count == 32 else r'{:016b}'
-            yield 'Red mask: ', print_format.format(self.red_mask)
-            yield 'Green mask: ', print_format.format(self.green_mask)
-            yield 'Blue mask: ', print_format.format(self.blue_mask)
-            yield 'Alpha mask: ', print_format.format(self.alpha_mask)
+            yield 'Red mask: ', '0x{:08x}'.format(self.red_mask)
+            yield 'Green mask: ', '0x{:08x}'.format(self.green_mask)
+            yield 'Blue mask: ', '0x{:08x}'.format(self.blue_mask)
+            yield 'Alpha mask: ', '0x{:08x}'.format(self.alpha_mask)
         yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
@@ -357,8 +360,8 @@ def fill_v4_info(file, info=None):
     info.green_mask = unpack('<I', file[0x3a:0x3a + 4])[0]
     info.blue_mask = unpack('<I', file[0x3e:0x3e + 4])[0]
     info.alpha_mask = unpack('<I', file[0x42:0x42 + 4])[0]
-    info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
-    info.cs_type = unpack('<I', file[0x46:0x46 + 4])[0]
+    cs_type = unpack('<4s', file[0x46:0x46 + 4])[0]
+    info.cs_type = cs_type.decode() if cs_type != b'\x00\x00\x00\x00' else 0
     return info
 
 
@@ -370,6 +373,27 @@ def fill_v5_info(file):
     info.profile_data = unpack('<I', file[0x7e:0x7e + 4])[0]
     info.profile_size = unpack('<I', file[0x82:0x82 + 4])[0]
     return info
+
+
+def extract_palette(file, bitmap_info: BitmapInfoVersion3):
+    palette = []
+    for index in range(bitmap_info.color_table_size):
+        offset = bitmap_info.color_table_offset + index * 4
+        color = file[offset:offset + 4][::-1]
+        red = color[1]
+        green = color[2]
+        blue = color[3]
+        palette.append((red, green, blue))
+    return palette
+
+
+def group_palette_by(palette, number):
+    result = []
+    for index in range(len(palette)):
+        if index % number == 0:
+            result.append([])
+        result[-1].append(palette[index])
+    return result
 
 
 VERSIONS = {

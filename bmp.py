@@ -2,7 +2,7 @@ import argparse
 from sys import argv
 from PyQt5.QtWidgets import QApplication
 from gui import *
-from main import *
+from bmp_core import *
 
 
 def specify_filename():
@@ -24,7 +24,6 @@ def main():
                 filename = args.file
             run_console_mode(filename)
     except Exception as e:
-        raise e
         print("Error: " + str(e))
 
 
@@ -49,6 +48,7 @@ def run_console_mode(filename):
     bitmap_info=get_bitmap_info(file, header)
     print_info(header)
     print_info(bitmap_info)
+    extract_palette(file, bitmap_info)
 
 
 def print_info(info):
