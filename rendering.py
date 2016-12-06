@@ -1,4 +1,5 @@
-from PyQt5.QtGui import QPainter, QColor
+from PyQt5 import QtCore
+from PyQt5.QtGui import QPainter, QColor, QPixmap
 from PyQt5.QtWidgets import QWidget
 
 from bmp_core import *
@@ -7,6 +8,8 @@ from bmp_core import *
 class BmpRenderer(QWidget):
     def __init__(self, file, header, bitmap_info, color_table, parent=None):
         QWidget.__init__(self, parent)
+        self.pixmap_cache = None
+        self.has_drawn = False
         self.min_size = 200
         self.bitmap_info = bitmap_info
         self.file = file
@@ -21,17 +24,33 @@ class BmpRenderer(QWidget):
         }
 
     def paintEvent(self, e):
-        qp = QPainter()
-        qp.begin(self)
+        if self.pixmap_cache is not None:
+            self.draw_cached_picture()
+            return
+        self.pixmap_cache = QPixmap(max(200, self.bitmap_info.width),
+                                    self.bitmap_info.height if self.bitmap_info.height > self.min_size else self.bitmap_info.height * self.min_size / self.bitmap_info.width)
+        self.pixmap_cache.fill(QtCore.Qt.transparent)
+        qp = QPainter(self.pixmap_cache)
+        qp.begin(self.pixmap_cache)
         if max(self.bitmap_info.width, self.bitmap_info.height) < self.min_size:
             self.render_picture(qp, self.file, self.min_size / self.bitmap_info.width)
         else:
             self.render_picture(qp, self.file, 1)
         qp.end()
+        if not self.has_drawn:
+            self.draw_cached_picture()
+            self.has_drawn = True
+
+    def draw_cached_picture(self):
+        qp = QPainter()
+        geom = self.geometry()
+        qp.begin(self)
+        qp.resetTransform()
+        qp.drawPixmap((geom.width() - self.bitmap_info.width) / 2, (geom.height() - self.bitmap_info.height) / 2,
+                      self.pixmap_cache)
+        qp.end()
 
     def render_picture(self, qp: QPainter, file, pixel_size):
-        geom = qp.viewport() if qp.viewport() else qp.window()
-        qp.translate((geom.width() - self.bitmap_info.width) / 2, (geom.height() - self.bitmap_info.height) / 2)
         if self.bitmap_info.bit_count == 16 or self.bitmap_info.bit_count == 32:
             self.init_rendering()
         for pixel in self.get_24_bit_pixels(file, pixel_size):

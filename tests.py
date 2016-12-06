@@ -5,13 +5,13 @@ import bmp_core as parser
 
 class TestFileParsing(unittest.TestCase):
     def setUp(self):
-        self.file_name = 'qwe.bmp'
+        self.file_name = 'images/qwe.bmp'
         self.file = parser.open_file(self.file_name)
 
     def test_bmp_check(self):
-        self.assert_file(parser.open_file('aa.bmp'))
+        self.assert_file(parser.open_file('images/aa.bmp'))
         with self.assertRaises(TypeError):
-            self.assert_file(parser.open_file('bb.png'))
+            self.assert_file(parser.open_file('images/bb.png'))
 
     def assert_file(self, file):
         parser.check_if_file_is_bmp(file, '')
@@ -81,7 +81,7 @@ class TestFileParsing(unittest.TestCase):
         expected.profile_data = 0
         expected.profile_size = 0
 
-        file_name = '32-3.bmp'
+        file_name = 'images/32-3.bmp'
         file = parser.open_file(file_name)
         result = parser.fill_v5_info(file)
         self.assertEqual(expected, result)
@@ -89,7 +89,7 @@ class TestFileParsing(unittest.TestCase):
 
 class PaletteTester(unittest.TestCase):
     def setUp(self):
-        self.file_name = 'aa.bmp'
+        self.file_name = 'images/aa.bmp'
         self.file = parser.open_file(self.file_name)
         self.header = parser.read_file_header(self.file, self.file_name)
         self.info = parser.get_bitmap_info(self.file, self.header)
