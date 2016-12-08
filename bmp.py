@@ -3,7 +3,6 @@ from sys import argv
 
 from PyQt5.QtWidgets import QApplication
 
-from bmp_core import *
 from gui import *
 
 
@@ -26,6 +25,7 @@ def main():
                 filename = args.file
             run_console_mode(filename)
     except Exception as e:
+        raise e
         print("Error: " + str(e))
 
 

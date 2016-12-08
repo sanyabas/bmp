@@ -1,3 +1,5 @@
+import math
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QColor, QPixmap
 from PyQt5.QtWidgets import QWidget
@@ -10,7 +12,7 @@ class BmpRenderer(QWidget):
         QWidget.__init__(self, parent)
         self.pixmap_cache = None
         self.has_drawn = False
-        self.min_size = 200
+        self.min_size = 300
         self.bitmap_info = bitmap_info
         self.file = file
         self.header = header
@@ -27,13 +29,13 @@ class BmpRenderer(QWidget):
         if self.pixmap_cache is not None:
             self.draw_cached_picture()
             return
-        self.pixmap_cache = QPixmap(max(200, self.bitmap_info.width),
+        self.pixmap_cache = QPixmap(max(self.min_size, self.bitmap_info.width),
                                     self.bitmap_info.height if self.bitmap_info.height > self.min_size else self.bitmap_info.height * self.min_size / self.bitmap_info.width)
         self.pixmap_cache.fill(QtCore.Qt.transparent)
         qp = QPainter(self.pixmap_cache)
         qp.begin(self.pixmap_cache)
         if max(self.bitmap_info.width, self.bitmap_info.height) < self.min_size:
-            self.render_picture(qp, self.file, self.min_size / self.bitmap_info.width)
+            self.render_picture(qp, self.file, math.floor(self.min_size / self.bitmap_info.width))
         else:
             self.render_picture(qp, self.file, 1)
         qp.end()
@@ -58,6 +60,16 @@ class BmpRenderer(QWidget):
             qp.fillRect(*coord, pixel_size, pixel_size, QColor(*color))
 
     def init_rendering(self):
+        f_string = '{:032b}' if self.bitmap_info.bit_count == 32 else '{:016b}'
+        red = f_string.format(self.bitmap_info.red_mask)
+        self.red_left, self.red_right = red.find('1'), red.rfind('1')
+        green = f_string.format(self.bitmap_info.green_mask)
+        self.green_left, self.green_right = green.find('1'), green.rfind('1')
+        blue = f_string.format(self.bitmap_info.blue_mask)
+        self.blue_left, self.blue_right = blue.find('1'), blue.rfind('1')
+        alpha = f_string.format(
+            self.bitmap_info.alpha_mask) if self.bitmap_info.alpha_mask <= 2 ** self.bitmap_info.bit_count else '0'
+        self.alpha_left, self.alpha_right = alpha.find('1'), alpha.rfind('1')
         red_length = len('{:b}'.format(self.bitmap_info.red_mask).strip('0'))
         green_length = len('{:b}'.format(self.bitmap_info.green_mask).strip('0'))
         blue_length = len('{:b}'.format(self.bitmap_info.blue_mask).strip('0'))
@@ -82,9 +94,11 @@ class BmpRenderer(QWidget):
             yield (x, y), color
             local_pixel_offset += 1
             if local_pixel_offset >= self.bitmap_info.width:
-                while (local_pixel_offset * self.byte_count) % 4 != 0:
+                total_offset = local_pixel_offset * self.byte_count
+                while (total_offset) % 4 != 0:
                     local_pixel_offset += 1
                     pixel_offset += 1
+                    total_offset += 1
                 row_number -= 1
                 local_pixel_offset = 0
 
@@ -113,14 +127,13 @@ class BmpRenderer(QWidget):
         return rgb_color, offset + 1
 
     def transform_color_to_rgb(self, color):
-        red_bin = '{:b}'.format(self.bitmap_info.red_mask & color)
-        red = int(red_bin.strip('0'), 2) * self.red_factor if red_bin != '0' else 0
-        green_bin = '{:b}'.format(self.bitmap_info.green_mask & color)
-        green = int(green_bin.strip('0'), 2) * self.green_factor if green_bin != '0' else 0
-        blue_bin = '{:b}'.format(self.bitmap_info.blue_mask & color)
-        blue = int(blue_bin.strip('0'), 2) * self.blue_factor if blue_bin != '0' else 0
-        alpha_bin = '{:b}'.format(self.bitmap_info.alpha_mask & color)
-        alpha = int(alpha_bin.strip('0'), 2) * self.alpha_factor if alpha_bin != '0' else 0
-        if '{:b}'.format(self.bitmap_info.alpha_mask).strip('0') == '':
-            alpha = 255
+        f_string = '{:032b}' if self.bitmap_info.bit_count == 32 else '{:016b}'
+        red_bin = f_string.format(color)[self.red_left:self.red_right + 1]
+        green_bin = f_string.format(color)[self.green_left:self.green_right + 1]
+        blue_bin = f_string.format(color)[self.blue_left:self.blue_right + 1]
+        alpha_bin = f_string.format(color)[self.alpha_left:self.alpha_right + 1]
+        red = int(red_bin, 2) * self.red_factor
+        green = int(green_bin, 2) * self.green_factor
+        blue = int(blue_bin, 2) * self.blue_factor
+        alpha = int(alpha_bin, 2) * self.alpha_factor if alpha_bin.strip('0') != '' or self.alpha_left != -1 else 255
         return red, green, blue, alpha

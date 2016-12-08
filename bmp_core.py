@@ -44,7 +44,7 @@ class FileHeader:
     def __iter__(self):
         reg = re.compile(r'(/?.*?)[\\/].*([\\/].+?)$')
         result = re.findall(reg, self.name)
-        yield "Name: ", self.name if len(self.name) < 20 else '{}...{}'.format(result[0][0], result[0][1])
+        yield "Name: ", self.name if len(self.name) < 25 else '{}...{}'.format(result[0][0], result[0][1])
         yield "Size: ", "{} bytes".format(self.size)
         yield "Offset: ", "{} bytes".format(self.offset)
         yield "Version: ", self.version
@@ -112,6 +112,10 @@ class BitmapInfoVersion3(BitmapInfoCore):
     def __init__(self):
         super().__init__()
         self.color_table_offset = 0x36
+        self.red_mask = 31744
+        self.green_mask = 992
+        self.blue_mask = 31
+        self.alpha_mask = 0
 
     @property
     def compression(self):
@@ -161,27 +165,6 @@ class BitmapInfoVersion3(BitmapInfoCore):
     def important_colors(self, value):
         self._important = value
 
-    def __iter__(self):
-        for prop in super().__iter__():
-            yield prop
-        yield 'Compression type: ', self.compression
-        yield 'Image data size: ', '{} bytes'.format(self.image_size)
-        yield 'PPM by X: ', self.x_pixels_per_meter
-        yield 'PPM by Y: ', self.y_pixels_per_meter
-        yield 'Size of color table: ', self.color_table_size
-        yield 'Important colors: ', self.important_colors
-
-    def __eq__(self, other):
-        return super.__eq__(self, other) and self.compression == other.compression \
-               and self.image_size == other.image_size and self.x_pixels_per_meter == other.x_pixels_per_meter \
-               and self.y_pixels_per_meter == other.y_pixels_per_meter \
-               and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
-
-
-class BitmapInfoVersion4(BitmapInfoVersion3):
-    def __init__(self):
-        super().__init__()
-
     @property
     def red_mask(self):
         return self._red_mask
@@ -213,6 +196,33 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
     @alpha_mask.setter
     def alpha_mask(self, value):
         self._alpha_mask = value
+
+    def __iter__(self):
+        for prop in super().__iter__():
+            yield prop
+        yield 'Compression type: ', self.compression
+        yield 'Image data size: ', '{} bytes'.format(self.image_size)
+        yield 'PPM by X: ', self.x_pixels_per_meter
+        yield 'PPM by Y: ', self.y_pixels_per_meter
+        yield 'Size of color table: ', self.color_table_size
+        yield 'Important colors: ', self.important_colors
+        if (self.compression == 3 or self.compression == 6) and (self.bit_count == 16 or self.bit_count == 32):
+            yield 'Red mask: ', '0x{:08x}'.format(self.red_mask)
+            yield 'Green mask: ', '0x{:08x}'.format(self.green_mask)
+            yield 'Blue mask: ', '0x{:08x}'.format(self.blue_mask)
+            # if self.compression==6:
+            yield 'Alpha mask: ', '0x{:08x}'.format(self.alpha_mask)
+
+    def __eq__(self, other):
+        return super.__eq__(self, other) and self.compression == other.compression \
+               and self.image_size == other.image_size and self.x_pixels_per_meter == other.x_pixels_per_meter \
+               and self.y_pixels_per_meter == other.y_pixels_per_meter \
+               and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
+
+
+class BitmapInfoVersion4(BitmapInfoVersion3):
+    def __init__(self):
+        super().__init__()
 
     @property
     def cs_type(self):
@@ -249,11 +259,6 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
     def __iter__(self):
         for property in super().__iter__():
             yield property
-        if self.bit_count == 16 or self.bit_count == 32:
-            yield 'Red mask: ', '0x{:08x}'.format(self.red_mask)
-            yield 'Green mask: ', '0x{:08x}'.format(self.green_mask)
-            yield 'Blue mask: ', '0x{:08x}'.format(self.blue_mask)
-            yield 'Alpha mask: ', '0x{:08x}'.format(self.alpha_mask)
         yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
@@ -348,6 +353,11 @@ def fill_v3_info(file, info=None):
     info.y_pixels_per_meter = unpack('<I', file[0x2a:0x2a + 4])[0]
     info.color_table_size = unpack('<I', file[0x2e:0x2e + 4])[0]
     info.important_colors = unpack('<I', file[0x32:0x32 + 4])[0]
+    if (info.compression == 3 or info.compression == 6):
+        info.red_mask = unpack('<I', file[0x36:0x36 + 4])[0]
+        info.green_mask = unpack('<I', file[0x3a:0x3a + 4])[0]
+        info.blue_mask = unpack('<I', file[0x3e:0x3e + 4])[0]
+        info.alpha_mask = unpack('<I', file[0x42:0x42 + 4])[0]
     return info
 
 
@@ -356,10 +366,6 @@ def fill_v4_info(file, info=None):
         info = BitmapInfoVersion4()
         info.version = 4
     info = fill_v3_info(file, info)
-    info.red_mask = unpack('<I', file[0x36:0x36 + 4])[0]
-    info.green_mask = unpack('<I', file[0x3a:0x3a + 4])[0]
-    info.blue_mask = unpack('<I', file[0x3e:0x3e + 4])[0]
-    info.alpha_mask = unpack('<I', file[0x42:0x42 + 4])[0]
     cs_type = unpack('<4s', file[0x46:0x46 + 4])[0]
     info.cs_type = cs_type.decode() if cs_type != b'\x00\x00\x00\x00' else 0
     return info
