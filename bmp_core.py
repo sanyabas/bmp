@@ -112,10 +112,18 @@ class BitmapInfoVersion3(BitmapInfoCore):
     def __init__(self):
         super().__init__()
         self.color_table_offset = 0x36
-        self.red_mask = 31744
-        self.green_mask = 992
-        self.blue_mask = 31
-        self.alpha_mask = 0
+
+    def set_default_masks(self):
+        if self.bit_count == 16:
+            self.red_mask = 31744
+            self.green_mask = 992
+            self.blue_mask = 31
+            self.alpha_mask = 0
+        elif self.bit_count == 32:
+            self.red_mask = 0x00ff0000
+            self.green_mask = 0x0000ff00
+            self.blue_mask = 0x000000ff
+            self.alpha_mask = 0x00000000
 
     @property
     def compression(self):
@@ -210,14 +218,16 @@ class BitmapInfoVersion3(BitmapInfoCore):
             yield 'Red mask: ', '0x{:08x}'.format(self.red_mask)
             yield 'Green mask: ', '0x{:08x}'.format(self.green_mask)
             yield 'Blue mask: ', '0x{:08x}'.format(self.blue_mask)
-            # if self.compression==6:
             yield 'Alpha mask: ', '0x{:08x}'.format(self.alpha_mask)
 
     def __eq__(self, other):
         return super.__eq__(self, other) and self.compression == other.compression \
                and self.image_size == other.image_size and self.x_pixels_per_meter == other.x_pixels_per_meter \
                and self.y_pixels_per_meter == other.y_pixels_per_meter \
-               and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors
+               and self.color_table_size == other.color_table_size and self.important_colors == other.important_colors \
+               and self.red_mask == other.red_mask \
+               and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
+               and self.alpha_mask == other.alpha_mask
 
 
 class BitmapInfoVersion4(BitmapInfoVersion3):
@@ -262,9 +272,7 @@ class BitmapInfoVersion4(BitmapInfoVersion3):
         yield 'Color space type: ', self.cs_type
 
     def __eq__(self, other):
-        return super.__eq__(self, other) and self.red_mask == other.red_mask \
-               and self.green_mask == other.green_mask and self.blue_mask == other.blue_mask \
-               and self.alpha_mask == other.alpha_mask and self.cs_type == other.cs_type
+        return super.__eq__(self, other) and self.cs_type == other.cs_type
 
 
 class BitmapInfoVersion5(BitmapInfoVersion4):
@@ -347,6 +355,7 @@ def fill_v3_info(file, info=None):
     info.height = unpack('<i', file[0x16:0x16 + 4])[0]
     info.planes_count = unpack('<H', file[0x1a:0x1a + 2])[0]
     info.bit_count = unpack('<H', file[0x1c:0x1c + 2])[0]
+    info.set_default_masks()
     info.compression = unpack('<I', file[0x1e:0x1e + 4])[0]
     info.image_size = unpack('<I', file[0x22:0x22 + 4])[0]
     info.x_pixels_per_meter = unpack('<I', file[0x26:0x26 + 4])[0]

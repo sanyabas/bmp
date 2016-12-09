@@ -25,7 +25,6 @@ def main():
                 filename = args.file
             run_console_mode(filename)
     except Exception as e:
-        raise e
         print("Error: " + str(e))
 
 
