@@ -1,6 +1,8 @@
 import sys
-from PyQt5 import QtWidgets, QtCore
+
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLabel, QMessageBox, QDialog
+
 from rendering import *
 
 
@@ -121,6 +123,7 @@ class PaletteWidget(QDialog):
     def __init__(self, palette, parent=None):
         QWidget.__init__(self, parent)
         self.palette = palette
+        self.setWindowTitle('Palette')
 
     def paintEvent(self, e):
         painter = QPainter()
@@ -134,5 +137,4 @@ class PaletteWidget(QDialog):
             row = palette[i]
             for j in range(len(row)):
                 color = row[j]
-                # painter.setBrush(QColor(*color))
                 painter.fillRect(i * rect_size, j * rect_size, rect_size, rect_size, QColor(*color))

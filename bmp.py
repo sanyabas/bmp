@@ -1,8 +1,9 @@
 import argparse
 from sys import argv
+
 from PyQt5.QtWidgets import QApplication
+
 from gui import *
-from bmp_core import *
 
 
 def specify_filename():
