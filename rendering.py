@@ -68,7 +68,7 @@ class BmpRenderer(QWidget):
         if self.bitmap_info.bit_count == 16 or self.bitmap_info.bit_count == 32:
             self.init_rendering()
         if self.bitmap_info.compression == 1 or self.bitmap_info.compression == 2:
-            pixel_extractor = self.render_compressed_image(file, 0, pixel_size)
+            pixel_extractor = self.render_compressed_image(file, self.bitmap_info.bit_count, pixel_size)
         else:
             pixel_extractor = self.get_pixels(file, pixel_size)
         for pixel in pixel_extractor:
@@ -193,21 +193,49 @@ class BmpRenderer(QWidget):
                     pixel_offset += 4
                 else:
                     count = second
+                    pixels_count = 0
                     for i in range(count):
-                        color_index = unpack('B', file[pixel_offset + 2 + i:pixel_offset + 3 + i])[0]
-                        color = self.color_table[color_index]
-                        x = local_pixel_offset * pixel_size
-                        y = row_number * pixel_size
-                        yield (x, y), color
-                        local_pixel_offset += 1
-                    pixel_offset += count + 2
+                        if local_pixel_offset >= self.bitmap_info.width:
+                            continue
+                        if pixels_count >= count:
+                            break
+                        color_index = unpack('B', file[pixel_offset + 2:pixel_offset + 3])[0]
+                        if size == 4:
+                            higher = color_index >> 4
+                            lower = color_index & 0x0f
+                            colors = [higher, lower]
+                        else:
+                            colors = [color_index]
+                        for index in colors:
+                            color = self.color_table[index]
+                            x = local_pixel_offset * pixel_size
+                            y = row_number * pixel_size
+                            yield (x, y), color
+                            local_pixel_offset += 1
+                            pixels_count += 1
+                        pixel_offset += 1
+                    pixel_offset += 2
             else:
                 count = first
                 color_index = unpack('B', file[pixel_offset + 1:pixel_offset + 2])[0]
-                color = self.color_table[color_index]
+
+                if size == 4:
+                    higher = color_index >> 4
+                    lower = color_index & 0x0f
+                    colors = [higher, lower]
+                else:
+                    colors = [color_index]
+                pixels_count = 0
                 for i in range(count):
-                    x = local_pixel_offset * pixel_size
-                    y = row_number * pixel_size
-                    yield (x, y), color
-                    local_pixel_offset += 1
+                    for local_color in colors:
+                        if pixels_count >= count:
+                            break
+                        if local_pixel_offset >= self.bitmap_info.width:
+                            break
+                        x = local_pixel_offset * pixel_size
+                        y = row_number * pixel_size
+                        color = self.color_table[local_color]
+                        yield (x, y), color
+                        local_pixel_offset += 1
+                        pixels_count += 1
                 pixel_offset += 2
