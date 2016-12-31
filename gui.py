@@ -1,8 +1,8 @@
 import sys
-
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QLabel, QMessageBox, QDialog
 
+from bmp_core import *
 from rendering import *
 
 

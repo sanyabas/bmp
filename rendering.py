@@ -1,10 +1,10 @@
 import math
-
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPainter, QColor, QPixmap
 from PyQt5.QtWidgets import QWidget
 
 from bmp_core import *
+from rle_rendering import *
 
 
 class BmpRenderer(QWidget):
@@ -19,6 +19,7 @@ class BmpRenderer(QWidget):
         self.byte_count = bitmap_info.bit_count / 8 if bitmap_info.bit_count >= 8 else 1
         self.color_table = color_table
         self.byte_offset = 0
+        self.compressed_renderer = CompressedBmpRenderer(file, header, bitmap_info, color_table)
 
         self.color_functions = {
             1: self.get_partial_byte_color,
@@ -67,7 +68,11 @@ class BmpRenderer(QWidget):
     def render_picture(self, qp: QPainter, file, pixel_size):
         if self.bitmap_info.bit_count == 16 or self.bitmap_info.bit_count == 32:
             self.init_rendering()
-        for pixel in self.get_pixels(file, pixel_size):
+        if self.bitmap_info.compression == 1 or self.bitmap_info.compression == 2:
+            pixel_extractor = self.compressed_renderer.render(file, self.bitmap_info.bit_count, pixel_size)
+        else:
+            pixel_extractor = self.get_pixels(file, pixel_size)
+        for pixel in pixel_extractor:
             coord, color = pixel
             qp.fillRect(*coord, pixel_size, pixel_size, QColor(*color))
 

@@ -112,6 +112,10 @@ class BitmapInfoVersion3(BitmapInfoCore):
     def __init__(self):
         super().__init__()
         self.color_table_offset = 0x36
+        self.red_mask = None
+        self.green_mask = None
+        self.blue_mask = None
+        self.alpha_mask = None
 
     def set_default_masks(self):
         if self.bit_count == 16:
