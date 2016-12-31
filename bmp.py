@@ -1,7 +1,6 @@
 import argparse
-from sys import argv
-
 from PyQt5.QtWidgets import QApplication
+from sys import argv
 
 from gui import *
 
